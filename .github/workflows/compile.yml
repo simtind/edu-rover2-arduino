@@ -23,7 +23,7 @@ jobs:
       - name: Install platform
         run: |
           arduino-cli core update-index
-          arduino-cli core install ${{ matrix.board }}
+          arduino-cli core install ${{ matrix.core }}
       - name: Install libraries
         run: |
           arduino-cli lib install ${{ matrix.libraries }}
