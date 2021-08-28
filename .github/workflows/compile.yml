@@ -5,12 +5,13 @@ jobs:
   build:    
     strategy:
       matrix:
-        board: ["arduino:megaavr", "arduino:mbed_nano"]
+        board: ["arduino:megaavr:nona4809", "arduino:mbed_nano:nano33ble"]
         include:
-          - board: arduino:megaavr
-            libraries: ArduinoJson
+          - board: arduino:megaavr:nona4809
+            core: arduino:megaavr
             sketch-path: ./nano_every
           - board: arduino:mbed_nano
+            core: arduino:mbed_nano
             libraries: ArduinoJson Arduino_LPS22HB Arduino_HTS221 Arduino_LSM9DS1
             sketch-path: ./nano_ble_sense
     runs-on: ubuntu-latest
