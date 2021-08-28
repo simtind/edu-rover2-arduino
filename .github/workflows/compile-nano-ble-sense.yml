@@ -1,5 +1,5 @@
 - name: Compile Arduino Sketches
-    uses: arduino/compile-sketches@v1.0.0
+- uses: arduino/compile-sketches@v1.0.0
     with:
         fqbn: 'arduino:arduino:mbed_nano'
         libraries: |
