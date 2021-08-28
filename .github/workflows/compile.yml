@@ -9,6 +9,7 @@ jobs:
         include:
           - board: arduino:megaavr:nona4809
             core: arduino:megaavr
+            libraries: ArduinoJson
             sketch-path: ./nano_every
           - board: arduino:mbed_nano
             core: arduino:mbed_nano
