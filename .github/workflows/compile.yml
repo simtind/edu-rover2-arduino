@@ -1,0 +1,29 @@
+name: Compile Arduino Sketches
+on: [push]
+
+jobs:
+  
+  build-nano-every:
+    runs-on: ubuntu-latest
+    steps:
+    - name: build
+      uses: arduino/compile-sketches@v1.0.0
+      with:
+        fqbn: 'arduino:megaavr'
+        libraries: |
+          - name: ArduinoJson
+        sketch-paths: "nano_every"
+  
+  build-nano-ble-sense:
+    runs-on: ubuntu-latest
+    steps:
+    - name: build
+      uses: arduino/compile-sketches@v1.0.0
+      with:
+        fqbn: 'arduino:arduino:mbed_nano'
+        libraries: |
+          - name: ArduinoJson
+          - name: Arduino_LPS22HB
+          - name: Arduino_HTS221
+          - name: Arduino_LSM9DS1
+        sketch-paths: "nano_ble_sense"
