@@ -5,14 +5,18 @@ jobs:
   build:    
     strategy:
       matrix:
-        board: ["arduino:megaavr:nona4809", "arduino:mbed_nano:nano33ble"]
+        target: ["arduino:megaavr:nona4809", "arduino:mbed_nano:nano33ble"]
         include:
-          - board: arduino:megaavr:nona4809
-            core: arduino:megaavr
+          - target: arduino:megaavr:nona4809
+            vendor: arduino
+            core: megaavr
+            board: nona4809
             libraries: ArduinoJson
             sketch-name: nano_every
-          - board: arduino:mbed_nano:nano33ble
-            core: arduino:mbed_nano
+          - target: arduino:mbed_nano:nano33ble
+            vendor: arduino
+            core: mbed_nano
+            board: nano33ble
             libraries: ArduinoJson Arduino_LPS22HB Arduino_HTS221 Arduino_LSM9DS1
             sketch-name: nano_ble_sense
     runs-on: ubuntu-latest
@@ -24,15 +28,15 @@ jobs:
       - name: Install platform
         run: |
           arduino-cli core update-index
-          arduino-cli core install ${{ matrix.core }}
+          arduino-cli core install ${{ matrix.vendor }}:${{ matrix.core }}
       - name: Install libraries
         run: |
           arduino-cli lib install ${{ matrix.libraries }}
       - name: Compile Sketch
         working-directory: .
-        run: arduino-cli compile --fqbn ${{ matrix.board }} -e ./${{ matrix.sketch-name }}
+        run: arduino-cli compile --fqbn ${{ matrix.vendor }}:${{ matrix.core }}:${{ matrix.board }} -e ./${{ matrix.sketch-name }}
       - name: Upload bin
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.board }}
-          path: ./${{ matrix.sketch-name }}/build/${{ matrix.board }}/${{ matrix.sketch-name }}.ino.bin
+          path: ./${{ matrix.sketch-name }}/build/${{ matrix.vendor }}.${{ matrix.core }}.${{ matrix.board }}/${{ matrix.sketch-name }}.ino.bin
