@@ -10,11 +10,11 @@ jobs:
           - board: arduino:megaavr:nona4809
             core: arduino:megaavr
             libraries: ArduinoJson
-            sketch-path: ./nano_every
+            sketch-name: nano_every
           - board: arduino:mbed_nano:nano33ble
             core: arduino:mbed_nano
             libraries: ArduinoJson Arduino_LPS22HB Arduino_HTS221 Arduino_LSM9DS1
-            sketch-path: ./nano_ble_sense
+            sketch-name: nano_ble_sense
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,9 +30,9 @@ jobs:
           arduino-cli lib install ${{ matrix.libraries }}
       - name: Compile Sketch
         working-directory: .
-        run: arduino-cli compile --fqbn ${{ matrix.board }} -e ${{ matrix.sketch-path }}
+        run: arduino-cli compile --fqbn ${{ matrix.board }} -e ./${{ matrix.sketch-name }}
       - name: Upload bin
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.board }}
-          path: ${{ matrix.sketch-path }}/build/${{ matrix.board }}/*.ino.bin
+          path: ${{ matrix.sketch-path }}/build/${{ matrix.board }}/${{ matrix.sketch-name }}.ino.bin
