@@ -12,7 +12,7 @@ jobs:
         fqbn: 'arduino:megaavr'
         libraries: |
           - name: ArduinoJson
-        sketch-paths: "nano_every/nano_every.ino"
+        sketch-paths: "./nano_every/nano_every.ino"
   
   build-nano-ble-sense:
     runs-on: ubuntu-latest
@@ -20,10 +20,10 @@ jobs:
     - name: build
       uses: arduino/compile-sketches@v1.0.0
       with:
-        fqbn: 'arduino:arduino:mbed_nano'
+        fqbn: 'arduino:mbed_nano'
         libraries: |
           - name: ArduinoJson
           - name: Arduino_LPS22HB
           - name: Arduino_HTS221
           - name: Arduino_LSM9DS1
-        sketch-paths: "nano_ble_sense/nano_ble_sense.ino"
+        sketch-paths: "./nano_ble_sense/nano_ble_sense.ino"
