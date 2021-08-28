@@ -2,28 +2,30 @@ name: Compile Arduino Sketches
 on: [push]
 
 jobs:
-  
-  build-nano-every:
+  build:    
+    strategy:
+      matrix:
+        board: ["arduino:megaavr", "arduino:mbed_nano"]
+        libraries: ["ArduinoJson", "ArduinoJson Arduino_LPS22HB Arduino_HTS221 Arduino_LSM9DS1"]
+        sketch-path: ["./nano_every", "./nano_ble_sense"]
     runs-on: ubuntu-latest
     steps:
-    - name: build
-      uses: arduino/compile-sketches@v1.0.0
-      with:
-        fqbn: 'arduino:megaavr'
-        libraries: |
-          - name: ArduinoJson
-        sketch-paths: "- nano_every/nano_every.ino"
-  
-  build-nano-ble-sense:
-    runs-on: ubuntu-latest
-    steps:
-    - name: build
-      uses: arduino/compile-sketches@v1.0.0
-      with:
-        fqbn: 'arduino:mbed_nano'
-        libraries: |
-          - name: ArduinoJson
-          - name: Arduino_LPS22HB
-          - name: Arduino_HTS221
-          - name: Arduino_LSM9DS1
-        sketch-paths: "- nano_ble_sense/nano_ble_sense.ino"
+      - name: Checkout
+        uses: actions/checkout@master
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v1.1.1
+      - name: Install platform
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install ${{ matrix.board }}'
+      - name: Install libraries
+        run: |
+          arduino-cli lib install ${{ matrix.libraries }}'
+      - name: Compile Sketch
+        working-directory: .
+        run: arduino-cli compile --fqbn ${{ matrix.board }} -e ${{ matrix.sketch-path }}"
+      - name: Upload bin
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.board }}
+          path: ${{ matrix.sketch-path }}/build/${{ matrix.board }}/*.ino.bin
