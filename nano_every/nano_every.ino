@@ -94,7 +94,7 @@ void loop() {
     indata += Serial1.read();
   }
 
-  if (indata.endsWith('\n')) {
+  if (indata.endsWith("\n")) {
     if (indata.length() > 1)
     {
       Serial.println(indata);
@@ -164,8 +164,8 @@ void loop() {
     }
     if (!interval.isNull())
     {
-      sensor_interval = std::chrono::milliseconds(interval.as<int>());
-      Serial.println("Interval = " + sensor_interval.count());
+      sensor_interval = interval.as<uint32_t>();
+      Serial.println("Interval = " + sensor_interval);
     }
   }
 }
