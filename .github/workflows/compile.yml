@@ -11,7 +11,7 @@ jobs:
             core: arduino:megaavr
             libraries: ArduinoJson
             sketch-path: ./nano_every
-          - board: arduino:mbed_nano
+          - board: arduino:mbed_nano:nano33ble
             core: arduino:mbed_nano
             libraries: ArduinoJson Arduino_LPS22HB Arduino_HTS221 Arduino_LSM9DS1
             sketch-path: ./nano_ble_sense
