@@ -39,4 +39,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.board }}
-          path: ./${{ matrix.sketch-name }}/build/${{ matrix.vendor }}.${{ matrix.core }}.${{ matrix.board }}/${{ matrix.sketch-name }}.ino.bin
+          path: ./${{ matrix.sketch-name }}/build/${{ matrix.vendor }}.${{ matrix.core }}.${{ matrix.board }}/${{ matrix.sketch-name }}.ino.hex
