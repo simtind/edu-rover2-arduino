@@ -191,84 +191,59 @@ void read_serial_input()
     DEBUG_SERIAL.println("Got data input");
     DEBUG_SERIAL.println(indata);
 
-    StaticJsonDocument<256> doc;
-    auto error = deserializeJson(doc, indata);
-    if (error != DeserializationError::Ok)
+    int starboard_thrust = 0;
+    int port_thrust = 0;
+    int vertical_thrust = 0;
+    int led_power = 0;
+    int interval = 0;
+    int armed = 0;
+
+    auto num_parsed = sscanf(indata.c_str(), "%i,%i,%i,%i,%i,%i", &starboard_thrust, &port_thrust, &vertical_thrust, &led_power, &interval, &armed);
+    if (num_parsed != 6)
     {
       #if DEBUG
-        DEBUG_SERIAL.println("Failed to deserialize input");
+        DEBUG_SERIAL.println("Failed to deserialize data");
       #endif
-      continue;
+      return;
     }
 
-    JsonVariant armed = doc["armed"];
-    JsonVariant starboard_thrust = doc["starboard"];
-    JsonVariant port_thrust = doc["port"];
-    JsonVariant vertical_thrust = doc["vertical"];
-    JsonVariant led_power = doc["headlight"];
-    JsonVariant interval = doc["interval"];
+    digitalWrite(PIN_MOTOR_ENABLE, armed);
+    set_motor_thrust(
+      PIN_MOTOR1_DIR,
+      PIN_MOTOR1_PWM,
+      MOTOR1_DIR_VAL(starboard_thrust),
+      starboard_thrust
+    );
 
-    if (!armed.isNull())
-    {
-      digitalWrite(PIN_MOTOR_ENABLE, armed.as<bool>());
-    }
+    set_motor_thrust(
+      PIN_MOTOR2_DIR,
+      PIN_MOTOR2_PWM,
+      MOTOR2_DIR_VAL(port_thrust),
+      port_thrust
+    );
+    
+    set_motor_thrust(
+      PIN_MOTOR3_DIR,
+      PIN_MOTOR3_PWM,
+      MOTOR3_DIR_VAL(vertical_thrust),
+      vertical_thrust
+    );
+    set_motor_thrust(
+      PIN_MOTOR4_DIR,
+      PIN_MOTOR4_PWM,
+      MOTOR4_DIR_VAL(vertical_thrust),
+      vertical_thrust
+    );
+  
+    analogWrite(PIN_LED_PWM, led_power);
 
-    if (!starboard_thrust.isNull())
+    if (std::chrono::milliseconds(interval) != sensor_interval)
     {
       #if DEBUG
-        DEBUG_SERIAL.println("Got starboard thrust");
-      #endif
-      float val = starboard_thrust.as<float>();
-      set_motor_thrust(
-        PIN_MOTOR1_DIR,
-        PIN_MOTOR1_PWM,
-        MOTOR1_DIR_VAL(val),
-        val
-      );
-    }
-    if (!port_thrust.isNull())
-    {
-      #if DEBUG
-        DEBUG_SERIAL.println("Got port thrust");
-      #endif
-      float val = port_thrust.as<float>();
-      set_motor_thrust(
-        PIN_MOTOR2_DIR,
-        PIN_MOTOR2_PWM,
-        MOTOR2_DIR_VAL(val),
-        val
-      );
-    }
-    if (!vertical_thrust.isNull())
-    {
-      #if DEBUG
-        DEBUG_SERIAL.println("Got vertical thrust");
-      #endif
-      float val = vertical_thrust.as<float>();
-      set_motor_thrust(
-        PIN_MOTOR3_DIR,
-        PIN_MOTOR3_PWM,
-        MOTOR3_DIR_VAL(val),
-        val
-      );
-      set_motor_thrust(
-        PIN_MOTOR4_DIR,
-        PIN_MOTOR4_PWM,
-        MOTOR4_DIR_VAL(val),
-        val
-      );
-    }
-    if (!led_power.isNull())
-    {
-      analogWrite(PIN_LED_PWM, led_power.as<float>());
-    }
-    if (!interval.isNull())
-    {
-      sensor_interval = std::chrono::milliseconds(interval.as<int>());
-      #if DEBUG
-        DEBUG_SERIAL.println("Interval = " + sensor_interval.count());
+        DEBUG_SERIAL.println(String("Interval = ") + max(30, interval));
       #endif
     }
+    sensor_interval = std::chrono::milliseconds(max(30, interval));
   }
 }
 

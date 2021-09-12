@@ -33,7 +33,7 @@
 
 // Select motor I/O pins so that we can use hw PWM outputs.
 #define MOTOR_DIR_VAL(thrust, forward_val) (thrust > 0 ? forward_val : !forward_val)
-#define MOTOR_PWM_VAL(thrust, dir_val)     (dir_val ? map(abs(thrust), 0, 1023, 255, 0) : map(abs(thrust), 0, 1023, 0, 255))
+#define MOTOR_PWM_VAL(thrust, dir_val)     (dir_val ? map(abs(thrust), 0, 255, 255, 0) : map(abs(thrust), 0, 255, 0, 255))
 
 #define PIN_MOTOR_ENABLE 2
 
