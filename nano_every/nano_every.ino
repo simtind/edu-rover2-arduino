@@ -73,8 +73,9 @@ void loop() {
   int16_t led_power = 0;
   uint32_t new_sensor_interval = 0;
   bool update_actuators = false;
+  auto time_diff = millis() - messageTime;
 
-  if ((millis() - messageTime) > sensor_interval) {
+  if (time_diff >= sensor_interval) {
     messageTime = millis();
 
     // All ADC measurements are multiplied by 100 to report 2-decimal precision numbers where possible
@@ -86,6 +87,9 @@ void loop() {
     sensors["battery"]           = BATTERY_ADC_TO_VOLT    (analogRead(PIN_SENSE_BATTERY));
     sensors["water_pressure"]    = PRESSURE_ADC_TO_KPA    (analogRead(PIN_SENSE_PRESSURE));
     sensors["water_temperature"] = TEMPERATURE_ADC_TO_DEGC(analogRead(PIN_SENSE_TEMPERATURE));
+    #if DEBUG
+      sensors["time_diff"]         = time_diff;
+    #endif
 
     serializeJson(sensors, RPI_SERIAL);
     RPI_SERIAL.println("");
@@ -171,7 +175,7 @@ void loop() {
     }
     if (!interval.isNull())
     {
-      sensor_interval = max(100, interval.as<uint32_t>());
+      sensor_interval = max(30, interval.as<uint32_t>());
       #if DEBUG
         DEBUG_SERIAL.println(String("Interval = ") + sensor_interval);
       #endif

@@ -6,6 +6,7 @@
 
 #define RPI_SERIAL Serial1
 #define DEBUG_SERIAL Serial
+#define DEBUG false
 
 #define frac_map(val, fromLow, fromHigh, toLow, toHigh) ((val - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) + toLow)
 
