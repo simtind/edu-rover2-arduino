@@ -2,9 +2,11 @@
 #include <mbed.h>
 #include <rtos.h>
 #include <ArduinoJson.h>
-#include <Arduino_LSM9DS1.h>
-#include <Arduino_LPS22HB.h>
-#include <Arduino_HTS221.h>
+#if HAS_ONBOARD_SENSORS
+  #include <Arduino_LSM9DS1.h>
+  #include <Arduino_LPS22HB.h>
+  #include <Arduino_HTS221.h>
+#endif 
 
 rtos::Mutex sensors_mutex;
 
@@ -31,95 +33,111 @@ void set_motor_thrust(int dir_pin, int pwm_pin, bool dir_val, float thrust)
   }
 }
 
-void read_inertia_sensors()
-{
-  while (true) {
-    Serial.println("read_inertia_sensors");
-    rtos::Kernel::Clock::time_point next_time = rtos::Kernel::Clock::now() + sensor_interval;
-
-    float acc_x;
-    float acc_y;
-    float acc_z;
-    float gyro_x;
-    float gyro_y;
-    float gyro_z;
-    float mag_x;
-    float mag_y;
-    float mag_z;
-
-    Serial.println("Check sensors and update");
-
-    if (IMU.accelerationAvailable()) {
-      Serial.println("Reading acceleration");
-      IMU.readAcceleration(acc_x, acc_y, acc_z);
-      sensors_mutex.lock();
-
-      sensors["acc_x"]  = acc_x;
-      sensors["acc_y"]  = acc_y;
-      sensors["acc_z"]  = acc_z;
-
-      sensors_mutex.unlock();
+#if HAS_ONBOARD_SENSORS
+  void read_inertia_sensors()
+  {
+    while (true) {
+      #if DEBUG
+        DEBUG_SERIAL.println("read_inertia_sensors");
+      #endif
+      rtos::Kernel::Clock::time_point next_time = rtos::Kernel::Clock::now() + sensor_interval;
+  
+      float acc_x;
+      float acc_y;
+      float acc_z;
+      float gyro_x;
+      float gyro_y;
+      float gyro_z;
+      float mag_x;
+      float mag_y;
+      float mag_z;
+  
+      #if DEBUG
+        DEBUG_SERIAL.println("Check sensors and update");
+      #endif
+  
+      if (IMU.accelerationAvailable()) {
+        #if DEBUG
+          DEBUG_SERIAL.println("Reading acceleration");
+        #endif
+        IMU.readAcceleration(acc_x, acc_y, acc_z);
+        sensors_mutex.lock();
+  
+        sensors["acc_x"]  = acc_x;
+        sensors["acc_y"]  = acc_y;
+        sensors["acc_z"]  = acc_z;
+  
+        sensors_mutex.unlock();
+      }
+  
+      if (IMU.gyroscopeAvailable()) {
+        #if DEBUG
+          DEBUG_SERIAL.println("Reading gyro");
+        #endif
+        IMU.readGyroscope(gyro_x, gyro_y, gyro_z);
+        sensors_mutex.lock();
+  
+        sensors["gyro_x"] = gyro_x;
+        sensors["gyro_y"] = gyro_y;
+        sensors["gyro_z"] = gyro_z;
+  
+        sensors_mutex.unlock();
+      }
+  
+      if (IMU.magneticFieldAvailable()) {
+        #if DEBUG
+          DEBUG_SERIAL.println("Reading compass");
+        #endif
+        IMU.readMagneticField(mag_x, mag_y, mag_z);
+        sensors_mutex.lock();
+  
+        sensors["mag_x"]  = mag_x;
+        sensors["mag_y"]  = mag_y;
+        sensors["mag_z"]  = mag_z;
+  
+        sensors_mutex.unlock();
+      }
+  
+      #if DEBUG
+        DEBUG_SERIAL.println("sleeping");
+      #endif
+  
+      rtos::ThisThread::sleep_until(next_time);
     }
-
-    if (IMU.gyroscopeAvailable()) {
-      Serial.println("Reading gyro");
-      IMU.readGyroscope(gyro_x, gyro_y, gyro_z);
-      sensors_mutex.lock();
-
-      sensors["gyro_x"] = gyro_x;
-      sensors["gyro_y"] = gyro_y;
-      sensors["gyro_z"] = gyro_z;
-
-      sensors_mutex.unlock();
-    }
-
-    if (IMU.magneticFieldAvailable()) {
-      Serial.println("Reading compass");
-      IMU.readMagneticField(mag_x, mag_y, mag_z);
-      sensors_mutex.lock();
-
-      sensors["mag_x"]  = mag_x;
-      sensors["mag_y"]  = mag_y;
-      sensors["mag_z"]  = mag_z;
-
-      sensors_mutex.unlock();
-    }
-
-    Serial.println("sleeping");
-
-    rtos::ThisThread::sleep_until(next_time);
   }
-}
-
-void read_env_sensors()
-{
-  while (true) {
-    rtos::Kernel::Clock::time_point next_time = rtos::Kernel::Clock::now() + sensor_interval;
-
-    float pressure;
-    float temperature;
-    float humidity;
-
-    pressure =    BARO.readPressure();
-    temperature = HTS.readTemperature();
-    humidity =    HTS.readHumidity();
-
-    sensors_mutex.lock();
-
-    sensors["pressure"]     = pressure;
-    sensors["temperature"]  = temperature;
-    sensors["humidity"]     = humidity;
-
-    sensors_mutex.unlock();
-
-    rtos::ThisThread::sleep_until(next_time);
+  
+  void read_env_sensors()
+  {
+    while (true) {
+      rtos::Kernel::Clock::time_point next_time = rtos::Kernel::Clock::now() + sensor_interval;
+  
+      float pressure;
+      float temperature;
+      float humidity;
+  
+      pressure =    BARO.readPressure();
+      temperature = HTS.readTemperature();
+      humidity =    HTS.readHumidity();
+  
+      sensors_mutex.lock();
+  
+      sensors["pressure"]     = pressure;
+      sensors["temperature"]  = temperature;
+      sensors["humidity"]     = humidity;
+  
+      sensors_mutex.unlock();
+  
+      rtos::ThisThread::sleep_until(next_time);
+    }
   }
-}
+#endif 
 
 void read_ext_sensors()
 {
   while (true) {
-    Serial.println("read_ext_sensors");
+    #if DEBUG
+      DEBUG_SERIAL.println("read_ext_sensors");
+    #endif
     rtos::Kernel::Clock::time_point next_time = rtos::Kernel::Clock::now() + sensor_interval;
 
     float motor1_current;
@@ -160,24 +178,26 @@ void read_ext_sensors()
 void read_serial_input()
 {
   while (true) {
-    Serial.println("read_serial_input");
-    String indata = Serial1.readStringUntil('}');
+    #if DEBUG
+      DEBUG_SERIAL.println("read_serial_input");
+    #endif
+    String indata = RPI_SERIAL.readStringUntil('\n');
 
-    indata += "}";
-  
     if (indata.length() <= 2)
     {
       continue;
     }
     
-    Serial.println("Got data input");
-    Serial.println(indata);
+    DEBUG_SERIAL.println("Got data input");
+    DEBUG_SERIAL.println(indata);
 
     StaticJsonDocument<256> doc;
     auto error = deserializeJson(doc, indata);
     if (error != DeserializationError::Ok)
     {
-      Serial.println("Failed to deserialize input");
+      #if DEBUG
+        DEBUG_SERIAL.println("Failed to deserialize input");
+      #endif
       continue;
     }
 
@@ -195,7 +215,9 @@ void read_serial_input()
 
     if (!starboard_thrust.isNull())
     {
-      Serial.println("Got starboard thrust");
+      #if DEBUG
+        DEBUG_SERIAL.println("Got starboard thrust");
+      #endif
       float val = starboard_thrust.as<float>();
       set_motor_thrust(
         PIN_MOTOR1_DIR,
@@ -206,7 +228,9 @@ void read_serial_input()
     }
     if (!port_thrust.isNull())
     {
-      Serial.println("Got port thrust");
+      #if DEBUG
+        DEBUG_SERIAL.println("Got port thrust");
+      #endif
       float val = port_thrust.as<float>();
       set_motor_thrust(
         PIN_MOTOR2_DIR,
@@ -217,7 +241,9 @@ void read_serial_input()
     }
     if (!vertical_thrust.isNull())
     {
-      Serial.println("Got vertical thrust");
+      #if DEBUG
+        DEBUG_SERIAL.println("Got vertical thrust");
+      #endif
       float val = vertical_thrust.as<float>();
       set_motor_thrust(
         PIN_MOTOR3_DIR,
@@ -239,7 +265,9 @@ void read_serial_input()
     if (!interval.isNull())
     {
       sensor_interval = std::chrono::milliseconds(interval.as<int>());
-      Serial.println("Interval = " + sensor_interval.count());
+      #if DEBUG
+        DEBUG_SERIAL.println("Interval = " + sensor_interval.count());
+      #endif
     }
   }
 }
@@ -270,46 +298,56 @@ void setup() {
   digitalWrite(PIN_MOTOR4_PWM, 0);
   digitalWrite(PIN_MOTOR4_DIR, 0);
 
-  Serial1.begin(115200);
-  Serial.begin(115200);
+  RPI_SERIAL.begin(115200);
+  RPI_SERIAL.println("EduROV Arduino start");
+  
+  #if DEBUG
+    DEBUG_SERIAL.begin(115200);
+    DEBUG_SERIAL.println("EduROV Arduino debug start");
+  #endif
 
-  Serial1.println("EduROV Arduino start");
-  Serial.println("EduROV Arduino debug start");
+  #if HAS_ONBOARD_SENSORS
+    if (IMU.begin() && HAS_ONBOARD_SENSORS) {
+      #if DEBUG
+        DEBUG_SERIAL.print("Accelerometer sample rate = ");
+        DEBUG_SERIAL.print(IMU.accelerationSampleRate());
+        DEBUG_SERIAL.println(" Hz");
+        DEBUG_SERIAL.print("Gyroscope sample rate = ");
+        DEBUG_SERIAL.print(IMU.gyroscopeSampleRate());
+        DEBUG_SERIAL.println(" Hz");
+        DEBUG_SERIAL.print("Magnetic field sample rate = ");
+        DEBUG_SERIAL.print(IMU.magneticFieldSampleRate());
+        DEBUG_SERIAL.println(" Hz");
+      #endif
+      sensors["acc_x"]  = 0.0;
+      sensors["acc_y"]  = 0.0;
+      sensors["acc_z"]  = 0.0;
+      sensors["gyro_x"] = 0.0;
+      sensors["gyro_y"] = 0.0;
+      sensors["gyro_z"] = 0.0;
+      sensors["mag_x"]  = 0.0;
+      sensors["mag_y"]  = 0.0;
+      sensors["mag_z"]  = 0.0;
+      thread_read_inertia_sensors.start(read_inertia_sensors);
+    }
+    else {
+      #if DEBUG
+        DEBUG_SERIAL.println("Failed to initialize IMU!");
+      #endif
+    }
 
-  if (IMU.begin() && HAS_ONBOARD_SENSORS) {
-    Serial.print("Accelerometer sample rate = ");
-    Serial.print(IMU.accelerationSampleRate());
-    Serial.println(" Hz");
-    Serial.print("Gyroscope sample rate = ");
-    Serial.print(IMU.gyroscopeSampleRate());
-    Serial.println(" Hz");
-    Serial.print("Magnetic field sample rate = ");
-    Serial.print(IMU.magneticFieldSampleRate());
-    Serial.println(" Hz");
-    sensors["acc_x"]  = 0.0;
-    sensors["acc_y"]  = 0.0;
-    sensors["acc_z"]  = 0.0;
-    sensors["gyro_x"] = 0.0;
-    sensors["gyro_y"] = 0.0;
-    sensors["gyro_z"] = 0.0;
-    sensors["mag_x"]  = 0.0;
-    sensors["mag_y"]  = 0.0;
-    sensors["mag_z"]  = 0.0;
-    thread_read_inertia_sensors.start(read_inertia_sensors);
-  }
-  else {
-    Serial.println("Failed to initialize IMU!");
-  }
-
-  if (BARO.begin() && HTS.begin() && HAS_ONBOARD_SENSORS) {
-    sensors["pressure"]     = 0.0;
-    sensors["temperature"]  = 0.0;
-    sensors["humidity"]     = 0.0;
-    thread_read_env_sensors.start(read_env_sensors);
-  }
-  else {
-    Serial.println("Failed to initialize pressure, humidity or temperature sensor!");
-  }
+    if (BARO.begin() && HTS.begin() && HAS_ONBOARD_SENSORS) {
+      sensors["pressure"]     = 0.0;
+      sensors["temperature"]  = 0.0;
+      sensors["humidity"]     = 0.0;
+      thread_read_env_sensors.start(read_env_sensors);
+    }
+    else {
+      #if DEBUG
+        DEBUG_SERIAL.println("Failed to initialize pressure, humidity or temperature sensor!");
+      #endif
+    }
+  #endif
 
   sensors["motor1_current"]    = 0.0;
   sensors["motor2_current"]    = 0.0;
@@ -326,10 +364,12 @@ void setup() {
 void loop() {
   rtos::Kernel::Clock::time_point next_time = rtos::Kernel::Clock::now() + sensor_interval;
 
-  Serial.println("Loop");
+  #if DEBUG
+    DEBUG_SERIAL.println("Loop");
+  #endif
 
   sensors_mutex.lock();
-  serializeJson(sensors, Serial1);
+  serializeJson(sensors, RPI_SERIAL);
   
   sensors_mutex.unlock();
 

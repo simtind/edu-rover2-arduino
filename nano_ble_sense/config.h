@@ -4,6 +4,12 @@
 // Set to true if compiling for Arduino nano 33 ble sense.
 #define HAS_ONBOARD_SENSORS false
 
+#define RPI_SERIAL Serial1
+#define DEBUG_SERIAL Serial
+#define DEBUG false
+
+#define frac_map(val, fromLow, fromHigh, toLow, toHigh) ((val - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) + toLow)
+
 // ----- Other I/O -----
 #define PIN_SENSE_BATTERY A2
 #define PIN_SENSE_PRESSURE A1
@@ -11,9 +17,9 @@
 
 #define SENSOR_SCALE 100
 
-#define BATTERY_ADC_TO_VOLT(adc_value)     map(adc_value,  0, 1023, 0, 99.0f)  // 0V to 5V in, multiply by 3 for divider.
-#define PRESSURE_ADC_TO_KPA(adc_value)     map(adc_value, 41, 1023, 0, 165.0f) // 0.2V to 5V -> 0kPa to 250kPa
-#define TEMPERATURE_ADC_TO_DEGC(adc_value) map(adc_value,  0, 1023, 0, 33.0f)  // 5V / (10mV / degC) = 50 degC  
+#define BATTERY_ADC_TO_VOLT(adc_value)     frac_map(adc_value, 0, 1023, 0, 13.2f)  // 0V to 3V3 in, multiply by 4 for divider.
+#define PRESSURE_ADC_TO_KPA(adc_value)     frac_map(adc_value, 0, 1023, 0, 175.0f) // 0V to 3v3 -> 10kPa to 175kPa, P = (Vo / 0.02) + 10
+#define TEMPERATURE_ADC_TO_DEGC(adc_value) frac_map(adc_value, 0, 1023, 0, 330.0f)  // 3V3 @ (10mV / degC) = 330 degC  
 
 #define PIN_LED_PWM 3
 
@@ -23,7 +29,7 @@
 #define PIN_SENSE_MOTOR2 A6
 #define PIN_SENSE_MOTOR3 A5
 #define PIN_SENSE_MOTOR4 A4
-#define MOTOR_ADC_TO_A(adc_value)         map(adc_value, 0, 1023, -3.3, 3.3)
+#define MOTOR_ADC_TO_A(adc_value)         frac_map(adc_value, 0, 1023, -3.3, 3.3)
 
 // Select motor I/O pins so that we can use hw PWM outputs.
 #define MOTOR_DIR_VAL(thrust) (thrust < 0)

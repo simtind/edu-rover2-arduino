@@ -51,11 +51,14 @@ void setup() {
   sensors["water_pressure"]    = 0.0;
   sensors["water_temperature"] = 0.0;
 
-  Serial1.begin(115200);
-  Serial.begin(115200);
-
-  Serial1.println("EduROV Arduino start");
-  Serial.println("EduROV Arduino debug start");
+  RPI_SERIAL.begin(115200);
+  RPI_SERIAL.setTimeout(0);
+  RPI_SERIAL.println("EduROV Arduino start");
+  
+  #if DEBUG
+    DEBUG_SERIAL.begin(115200);
+    DEBUG_SERIAL.println("EduROV Arduino debug start");
+  #endif
 }
 
 void loop() {
@@ -63,8 +66,6 @@ void loop() {
   static uint32_t messageTime = 0;
   static uint32_t sensor_interval = 500; //how long between each sensor update - milliseconds
   static String indata = "";
-
-  Serial1.setTimeout(sensor_interval - 10);
 
   int16_t starboard_thrust = 0;
   int16_t port_thrust = 0;
@@ -86,25 +87,31 @@ void loop() {
     sensors["water_pressure"]    = PRESSURE_ADC_TO_KPA    (analogRead(PIN_SENSE_PRESSURE));
     sensors["water_temperature"] = TEMPERATURE_ADC_TO_DEGC(analogRead(PIN_SENSE_TEMPERATURE));
 
-    serializeMsgPack(sensors, Serial1);
-    Serial1.println("");
+    serializeJson(sensors, RPI_SERIAL);
+    RPI_SERIAL.println("");
+    
+    #if DEBUG
+      serializeJson(sensors, DEBUG_SERIAL);
+      DEBUG_SERIAL.println("");
+    #endif
   }
+  
+  indata += RPI_SERIAL.readString();
 
-  if (Serial1.available()) {
-    indata += Serial1.read();
-  }
-
-  if (indata.endsWith("\n")) {
+  if (indata.lastIndexOf('\n') != -1) {
     if (indata.length() > 1)
     {
-      Serial.println(indata);
+      DEBUG_SERIAL.println(indata);
     }
 
     StaticJsonDocument<256> doc;
-    auto error = deserializeMsgPack(doc, indata);
+    auto error = deserializeJson(doc, indata);
+    indata = "";
     if (error != DeserializationError::Ok)
     {
-      Serial.println("Failed to deserialize input");
+      #if DEBUG
+        DEBUG_SERIAL.println("Failed to deserialize input");
+      #endif
       return;
     }
 
@@ -164,8 +171,10 @@ void loop() {
     }
     if (!interval.isNull())
     {
-      sensor_interval = interval.as<uint32_t>();
-      Serial.println("Interval = " + sensor_interval);
+      sensor_interval = max(100, interval.as<uint32_t>());
+      #if DEBUG
+        DEBUG_SERIAL.println(String("Interval = ") + sensor_interval);
+      #endif
     }
   }
 }
